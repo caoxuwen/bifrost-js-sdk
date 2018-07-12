@@ -1,6 +1,6 @@
 import axios from 'axios';
 import Promise from 'bluebird'; // IE11
-import {Account, Asset, Keypair, Network, Operation, Server as HorizonServer, TransactionBuilder, StrKey} from 'stellar-sdk';
+import {Account, Asset, Keypair, Network, Operation, Server as HorizonServer, TransactionBuilder, StrKey} from 'ion-sdk';
 
 export const TransactionReceivedEvent = "transaction_received"
 export const AccountCreatedEvent = "account_created"
@@ -26,9 +26,11 @@ export class Session {
     this.horizon = new HorizonServer(this.params.horizonURL, horizonOpts);
     
     if (params.network == 'test') {
-      Network.useTestNetwork();
+	Network.useTestNetwork();
+    } else if (params.network == 'live'){
+	Network.usePublicNetwork();
     } else {
-      Network.usePublicNetwork();
+	Network.use(new Network(params.network));
     }
     this.started = false;
   }
@@ -110,9 +112,9 @@ export class Session {
       throw new Error("params not provided");
     }
 
-    if (['live', 'test'].indexOf(params.network) == -1) {
+    /*if (['live', 'test'].indexOf(params.network) == -1) {
       throw new Error("Invalid params.network");
-    }
+    }*/
 
     let requiredParams = ['bifrostURL', 'horizonURL'];
     for (let param of requiredParams) {
