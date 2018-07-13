@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <title>Bifrost Demo</title>
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+    crossorigin="anonymous">
   <style type="text/css">
     body {
       background-color: #CFEFF8;
@@ -14,70 +16,82 @@
       text-align: center;
       padding: 50px;
       margin-top: 50px;
-      box-shadow: 0 1px 3px rgba(0,0,0,.3);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
       border-radius: 3px;
     }
   </style>
 </head>
+
 <body>
 
-<div class="container">
-  <p class="lead">Send Ropsten <strong>testnet</strong> ETH to the following address:</p>
-  <pre id="address">Loading...</pre>
-  <p><strong>Do not send real ETH!</strong></p>
-  <p>Exchange rate: 1 ETH = 1 TEST token</p>
-  <p><a href="https://github.com/stellar/go/tree/master/services/bifrost#demo" target="_blank">Instructions</a></p>
-  <hr />
-  <div class="progress">
-    <div id="progressbar" class="progress-bar progress-bar-striped active" style="width: 0%"></div>
+  <div class="container">
+    <p class="lead">Send Ropsten
+      <strong>testnet</strong> ETH to the following address:</p>
+    <pre id="address">Loading...</pre>
+    <p>
+      <strong>Do not send real ETH!</strong>
+    </p>
+    <p>Exchange rate: 1 ETH = 1 TEST token</p>
+    <p>
+      <a href="https://github.com/stellar/go/tree/master/services/bifrost#demo" target="_blank">Instructions</a>
+    </p>
+    <hr />
+    <div class="progress">
+      <div id="progressbar" class="progress-bar progress-bar-striped active" style="width: 0%"></div>
+    </div>
+    <p class="lead" id="status">Generating keys...</p>
   </div>
-  <p class="lead" id="status">Generating keys...</p>
-</div>
 
-<script src="./dist/bifrost.js"></script>
-<script type="text/javascript">
-  var params = {
-    network: 'Test ION Network ; June 2018',
-    horizonURL: 'https://api.ion.one',
-    bifrostURL: 'http://localhost:8000'
-  };
+  <script src="./dist/bifrost.js"></script>
+  <script type="text/javascript">
+    var params = {
+      network: 'Test ION Network ; June 2018',
+      horizonURL: 'https://api.ion.one',
+      bifrostURL: 'http://localhost:8000'
+    };
 
-  var session = new Bifrost.Session(params);
-  var keypair;
-  session.startEthereum(onEvent).then(params => {
-    setStatus("Waiting for a transaction...", 10);
-    document.getElementById("address").innerText = params.address;
-    keypair = params.keypair;
-  }).catch(err => {
-    setStatus("Error", 0);
-    console.error(err);
-  });
+    var session = new Bifrost.Session(params);
 
-  function onEvent(event, data) {
-    if (event == Bifrost.TransactionReceivedEvent) {
-      setStatus("Transaction received, creating account...", 20)
-    } else if (event == Bifrost.AccountCreatedEvent) {
-      setStatus("Account created, configuring account...", 40)
-    } else if (event == Bifrost.AccountConfiguredEvent) {
-      setStatus("Account configured, waiting for tokens...", 60)
-    } else if (event == Bifrost.ExchangedEvent) {
-      setStatus("Congrats! TEST purchased. Your Stellar keys: <pre>Public key: "+keypair.publicKey()+"\nSecret key: "+keypair.secret()+"</pre>", 100);
-    } else if (event == Bifrost.ExchangedTimelockedEvent) {
-      setStatus("Congrats! TEST purchased but will be locked. Your Stellar keys: <pre>Public key: "+keypair.publicKey()+"\nSecret key: "+keypair.secret()+"</pre>\nUnlock transaction: <pre>"+data.transaction+"</pre>", 100);
-    } else if (event == Bifrost.ErrorEvent) {
-      setStatus("Error!", 0);
-      console.error(data);
+    //if keypair is null, ion will create a new one
+    //var secret = "SBKWQGAOEXKNM5EBH2I5O5DU3BVVXJRUVKUSLGI6GWSE4UHG6OZSHLP3";
+    var secret = "SBTOXYFOTBCLKKDEQTBJ7OETG3PPMA7HNPS43SU3S5JYB2FOFZLLVEX3";
+    var keypair = Bifrost.IONKeypair.fromSecret(secret);
+    //var keypair = null;
+    session.startEthereum(keypair, onEvent).then(params => {
+      setStatus("Waiting for a transaction...", 10);
+      document.getElementById("address").innerText = params.address;
+      keypair = params.keypair;
+    }).catch(err => {
+      setStatus("Error", 0);
+      console.error(err);
+    });
+
+    function onEvent(event, data) {
+      if (event == Bifrost.TransactionReceivedEvent) {
+        setStatus("Transaction received, creating account...", 20)
+      } else if (event == Bifrost.AccountCreatedEvent) {
+        setStatus("Account created, configuring account...", 40)
+      } else if (event == Bifrost.AccountConfiguredEvent) {
+        setStatus("Account configured, waiting for tokens...", 60)
+      } else if (event == Bifrost.ExchangedEvent) {
+        setStatus("Congrats! TEST purchased. Your Stellar keys: <pre>Public key: " + keypair.publicKey() + "\nSecret key: " + keypair.secret() + "</pre>", 100);
+      } else if (event == Bifrost.ExchangedTimelockedEvent) {
+        setStatus("Congrats! TEST purchased but will be locked. Your Stellar keys: <pre>Public key: " + keypair.publicKey() + "\nSecret key: " + keypair.secret() + "</pre>\nUnlock transaction: <pre>" + data.transaction + "</pre>", 100);
+      } else if (event == Bifrost.ErrorEvent) {
+        setStatus("Error!", 0);
+        console.error(data);
+      }
     }
-  }
 
-  function setStatus(text, progress) {
-    var progressbar = document.getElementById("progressbar")
-    progressbar.style.width = progress+"%";
-    if (progress == 100) {
-      progressbar.className = "progress-bar progress-bar-success";
+    function setStatus(text, progress) {
+      var progressbar = document.getElementById("progressbar")
+      progressbar.style.width = progress + "%";
+      if (progress == 100) {
+        progressbar.className = "progress-bar progress-bar-success";
+      }
+      document.getElementById("status").innerHTML = text;
     }
-    document.getElementById("status").innerHTML = text;
-  }
-</script>
+  </script>
 </body>
+
 </html>

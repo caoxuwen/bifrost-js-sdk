@@ -1,6 +1,6 @@
 import axios from 'axios';
 import Promise from 'bluebird'; // IE11
-import {Account, Asset, Keypair, Network, Operation, Server as HorizonServer, TransactionBuilder, StrKey} from 'ion-sdk';
+import { Account, Asset, Keypair, Network, Operation, Server as HorizonServer, TransactionBuilder, StrKey } from 'ion-sdk';
 
 export const TransactionReceivedEvent = "transaction_received"
 export const AccountCreatedEvent = "account_created"
@@ -8,6 +8,7 @@ export const AccountConfiguredEvent = "account_configured"
 export const ExchangedEvent = "exchanged"
 export const ExchangedTimelockedEvent = "exchanged_timelocked"
 export const ErrorEvent = "error"
+export const IONKeypair = Keypair
 
 const ProtocolVersion = 2;
 
@@ -24,31 +25,32 @@ export class Session {
       horizonOpts.allowHttp = params.horizonAllowHttp
     }
     this.horizon = new HorizonServer(this.params.horizonURL, horizonOpts);
-    
+
     if (params.network == 'test') {
-	Network.useTestNetwork();
-    } else if (params.network == 'live'){
-	Network.usePublicNetwork();
+      Network.useTestNetwork();
+    } else if (params.network == 'live') {
+      Network.usePublicNetwork();
     } else {
-	Network.use(new Network(params.network));
+      Network.use(new Network(params.network));
     }
     this.started = false;
   }
 
-  startBitcoin(onEvent) {
-    return this._start(ChainBitcoin, onEvent);
+  startBitcoin(defaultKeypair, onEvent) {
+    return this._start(ChainBitcoin, defaultKeypair, onEvent);
   }
 
-  startEthereum(onEvent) {
-    return this._start(ChainEthereum, onEvent);
+  startEthereum(defaultKeypair, onEvent) {
+    return this._start(ChainEthereum, defaultKeypair, onEvent);
   }
 
-  _start(chain, onEvent) {
+  _start(chain, defaultKeypair, onEvent) {
     if (this.started) {
       throw new Error("Session already started");
     }
     this.started = true;
-    this.keypair = Keypair.random();
+
+    this.keypair = defaultKeypair ? defaultKeypair : Keypair.random();
 
     return new Promise((resolve, reject) => {
       axios.post(`${this.params.bifrostURL}/generate-${chain}-address`, `stellar_public_key=${this.keypair.publicKey()}`)
@@ -62,10 +64,10 @@ export class Session {
           }
 
           var address = response.data.address;
-          resolve({address: address, keypair: this.keypair});
+          resolve({ address: address, keypair: this.keypair });
 
           this.signer = response.data.signer;
-
+          this.nounce = Math.floor(Math.random() * 1000000);
           var source = new EventSource(`${this.params.bifrostURL}/events?stream=${address}`);
           source.addEventListener(TransactionReceivedEvent, e => onEvent(TransactionReceivedEvent), false);
           source.addEventListener(AccountCreatedEvent, e => this._onAccountCreated(onEvent), false);
@@ -86,10 +88,19 @@ export class Session {
   _onAccountCreated(onEvent) {
     onEvent(AccountCreatedEvent);
 
-    // Add Bifrost signer and remove master key
     this.horizon.loadAccount(this.keypair.publicKey())
       .then(sourceAccount => {
         this._onAccountCreatedRecoveryTransactions(sourceAccount.sequenceNumber());
+
+        var assetTrusted = false;
+        sourceAccount.balances.forEach(balance => {
+          if (balance.asset_code == "ETHI" && balance.asset_issuer == "GDHXYFJQOENGL5FILWSCG2PFI3WJWVFU4S26RBFIS27H5KT3H6OJAXEA") {
+            assetTrusted = true;
+          }
+        })
+
+        if (assetTrusted)
+          return true;
 
         var transaction = new TransactionBuilder(sourceAccount)
           .addOperation(Operation.setOptions({
@@ -129,7 +140,6 @@ export class Session {
       }
     }
   }
-
   _onAccountCreatedRecoveryTransactions(currentSequenceNumber) {
     if (this.params.recoveryPublicKey === undefined) {
       return;

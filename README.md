@@ -41,7 +41,7 @@ Starts Bitcoin session and returns a promise that resolves with Bitcoin address 
 
 Example:
 ```js
-session.startBitcoin(onEvent).then({address, keypair} => {
+session.startBitcoin(defaultKeypair, onEvent).then({address, keypair} => {
   document.getElementById("status").innerText = "Waiting for a transaction...";
   document.getElementById("address").innerText = address;
   document.getElementById("public-key").innerText = keypair.publicKey();
@@ -51,13 +51,13 @@ session.startBitcoin(onEvent).then({address, keypair} => {
 
 `onEvent` description can be found in the section below.
 
-### `Bifrost.Session.startEthereum(onEvent) => Promise`
+### `Bifrost.Session.startEthereum(defaultKeypair, onEvent) => Promise`
 
 Starts Ethereum session and returns a promise that resolves with Ethereum address where to send funds and Stellar keypair. Once the session is started, no other session can be created using the same object. You need to create a new one.
 
 Example:
 ```js
-session.startEthereum(onEvent).then({address, keypair} => {
+session.startEthereum(defaultKeypair, onEvent).then({address, keypair} => {
   document.getElementById("status").innerText = "Waiting for a transaction...";
   document.getElementById("address").innerText = address;
   document.getElementById("public-key").innerText = keypair.publicKey();
