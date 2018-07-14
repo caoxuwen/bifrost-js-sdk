@@ -25,16 +25,13 @@
 <body>
 
   <div class="container">
-    <p class="lead">Send Ropsten
+    <p class="lead">Send Rinkeby
       <strong>testnet</strong> ETH to the following address:</p>
     <pre id="address">Loading...</pre>
     <p>
       <strong>Do not send real ETH!</strong>
     </p>
-    <p>Exchange rate: 1 ETH = 1 TEST token</p>
-    <p>
-      <a href="https://github.com/stellar/go/tree/master/services/bifrost#demo" target="_blank">Instructions</a>
-    </p>
+    <p>Exchange rate: 1 ETH = 1 ETHI in ION network</p>
     <hr />
     <div class="progress">
       <div id="progressbar" class="progress-bar progress-bar-striped active" style="width: 0%"></div>
@@ -47,7 +44,7 @@
     var params = {
       network: 'Test ION Network ; June 2018',
       horizonURL: 'https://api.ion.one',
-      bifrostURL: 'http://localhost:8000'
+      bifrostURL: 'https://bridge.ion.one'
     };
 
     var session = new Bifrost.Session(params);
